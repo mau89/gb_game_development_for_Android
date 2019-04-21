@@ -7,6 +7,8 @@ import com.badlogic.gdx.math.Vector2;
 
 import ru.geekbrains.stargame.base.BaseScreen;
 import ru.geekbrains.stargame.math.Rect;
+import ru.geekbrains.stargame.pool.BulletPool;
+import ru.geekbrains.stargame.pool.EnemyShipPool;
 import ru.geekbrains.stargame.sprite.Background;
 import ru.geekbrains.stargame.sprite.Boat;
 import ru.geekbrains.stargame.sprite.Star;
@@ -21,6 +23,9 @@ public class GameScreen extends BaseScreen {
 
     private Boat boat;
 
+    private BulletPool bulletPool;
+    private EnemyShipPool enemyShipPool;
+
     @Override
     public void show() {
         super.show();
@@ -31,7 +36,10 @@ public class GameScreen extends BaseScreen {
         for (int i = 0; i < starList.length; i++) {
             starList[i] = new Star(atlas);
         }
-        boat=new Boat(atlas);
+        bulletPool = new BulletPool();
+        enemyShipPool = new EnemyShipPool();
+        boat = new Boat(atlas, bulletPool, enemyShipPool);
+
 
     }
 
@@ -49,17 +57,34 @@ public class GameScreen extends BaseScreen {
     @Override
     public void render(float delta) {
         super.render(delta);
+        update(delta);
+        freeAllDestroyedSprites();
+        draw();
+    }
+
+    private void update(float delta) {
         for (Star star : starList) {
             star.update(delta);
         }
+        boat.update(delta);
+        bulletPool.updateActiveSprites(delta);
+        enemyShipPool.updateActiveSprites(delta);
+    }
+
+    private void freeAllDestroyedSprites() {
+        bulletPool.freeAllDestroyedActiveSprites();
+        enemyShipPool.freeAllDestroyedActiveSprites();
+    }
+
+    private void draw() {
         batch.begin();
-        background.draw(batch);
         background.draw(batch);
         for (Star star : starList) {
             star.draw(batch);
         }
-        boat.update(delta);
         boat.draw(batch);
+        bulletPool.drawActiveSprites(batch);
+        enemyShipPool.drawActiveSprites(batch);
         batch.end();
     }
 
@@ -67,8 +92,21 @@ public class GameScreen extends BaseScreen {
     public void dispose() {
         super.dispose();
         bg.dispose();
-
         atlas.dispose();
+        bulletPool.dispose();
+        enemyShipPool.dispose();
+    }
+
+    @Override
+    public boolean keyDown(int keycode) {
+        boat.keyDown(keycode);
+        return false;
+    }
+
+    @Override
+    public boolean keyUp(int keycode) {
+        boat.keyUp(keycode);
+        return false;
     }
 
     @Override
@@ -79,7 +117,7 @@ public class GameScreen extends BaseScreen {
 
     @Override
     public boolean touchUp(Vector2 touch, int pointer) {
-
+        boat.touchUp(touch, pointer);
         return false;
     }
 }
